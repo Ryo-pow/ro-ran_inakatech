@@ -24,6 +24,29 @@ from openapi_server import util
 from openapi_server.database import db, User, Tree
 from werkzeug.security import generate_password_hash
 
+# default_controller.py
+
+# default_controller.py
+
+def decode_token(token):
+    """
+    Connexionフレームワークがトークンを検証するために呼び出す関数
+    """
+    try:
+        # ログイン機能で使ったものと全く同じ秘密鍵を使用
+        print(f"--- [デバッグ] 検証するトークン: {token} ---")
+        decoded_token = jwt.decode(token, 'your-secret-key', algorithms=['HS256'])
+        print("--- [デバッグ] トークンのデコードに成功！ ---")
+        return decoded_token
+
+    except jwt.ExpiredSignatureError:
+        print("--- [デバッグ] エラー: トークンの有効期限が切れています ---")
+        return None
+    except jwt.InvalidTokenError as e:
+        # ▼ 最も重要なデバッグ情報 ▼
+        print(f"--- [デバッグ] エラー: 無効なトークンです。詳細な理由: {e} ---")
+        return None
+
 # 正しい関数が1つだけ存在する状態
 def auth_register_post(body):
     user_register = body
@@ -60,7 +83,7 @@ def auth_login_post(body):  # noqa: E501
 
     # 3. JWT（アクセストークン）を生成する
     payload = {
-        'sub': user.id, # トークンの主体（ユーザーID）
+        'sub': str(user.id), # トークンの主体（ユーザーID）
         'iat': datetime.datetime.utcnow(), # 発行時刻
         'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1) # 有効期限 (1日)
     }
@@ -220,43 +243,29 @@ def trees_get():  # noqa: E501
 
     return result
 
-def trees_post(body):  # noqa: E501
+# 修正後の trees_post 関数
+def trees_post(body, token_info):  # ★ 引数に token_info が追加される
     """Create a new tree
     """
     if connexion.request.is_json:
         trees_post_request = TreesPostRequest.from_dict(connexion.request.get_json())
-    
-    # 1. ヘッダーからJWTを取得
-    auth_header = connexion.request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return {"message": "認証トークンが必要です"}, 401
 
-    token = auth_header.split(" ")[1]
+    # ★ トークンは既に検証済み！デコードされた情報が token_info に入っている
+    current_user_id = token_info['sub']
 
-    try:
-        # 2. JWTをデコードしてユーザーIDを取得
-        # 'your-secret-key'はログイン機能で使ったものと同じキーにします
-        payload = jwt.decode(token, 'your-secret-key', algorithms=['HS256'])
-        current_user_id = payload['sub']
-    except jwt.ExpiredSignatureError:
-        return {"message": "トークンの有効期限が切れています"}, 401
-    except jwt.InvalidTokenError:
-        return {"message": "無効なトークンです"}, 401
-
-    # 3. 新しい木オブジェクトを作成
+    # 新しい木オブジェクトを作成
     new_tree = Tree(
         lat=trees_post_request.lat,
         lng=trees_post_request.lng,
         type=trees_post_request.type,
-        owner_user_id=current_user_id  # JWTから取得したIDを所有者として設定
+        owner_user_id=current_user_id
     )
 
-    # 4. データベースに保存
+    # データベースに保存
     db.session.add(new_tree)
     db.session.commit()
 
-    # 5. 作成された木オブジェクトを返す
-    # 注意：Treeモデルのオブジェクトを直接返せないので、辞書に変換します
+    # 作成された木オブジェクトを返す
     result = {
         "id": new_tree.id,
         "lat": new_tree.lat,
@@ -264,5 +273,5 @@ def trees_post(body):  # noqa: E501
         "type": new_tree.type,
         "lidar_url": new_tree.lidar_url
     }
-    
+
     return result, 201
