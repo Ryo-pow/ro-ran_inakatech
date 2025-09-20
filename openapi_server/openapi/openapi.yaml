@@ -1,0 +1,437 @@
+openapi: 3.0.3
+info:
+  description: |
+    Flask backend for tree registration, LiDAR file management (server-side upload),   and work log (作業日誌) recording.
+  title: Tree Management API
+  version: 1.0.0
+servers:
+- url: /api/v1
+paths:
+  /auth/login:
+    post:
+      operationId: auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: JWT token
+      summary: Login user and get JWT
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /auth/register:
+    post:
+      operationId: auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegister"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_auth_register_post_200_response"
+          description: User created
+      summary: Register a new user
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /trees:
+    get:
+      operationId: trees_get
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Tree"
+                type: array
+          description: List of trees
+      security:
+      - bearerAuth: []
+      summary: List all trees
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+    post:
+      operationId: trees_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/_trees_post_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tree"
+          description: Created tree
+      security:
+      - bearerAuth: []
+      summary: Create a new tree
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /trees/{tree_id}:
+    get:
+      operationId: trees_tree_id_get
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tree"
+          description: Tree details
+      security:
+      - bearerAuth: []
+      summary: Get tree details
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /trees/{tree_id}/lidar:
+    delete:
+      operationId: trees_tree_id_lidar_delete
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_trees__tree_id__lidar_delete_200_response"
+          description: LiDAR deleted
+      security:
+      - bearerAuth: []
+      summary: Delete LiDAR file
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+    head:
+      operationId: trees_tree_id_lidar_head
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          description: LiDAR file metadata
+          headers:
+            Content-Length:
+              explode: false
+              schema:
+                type: integer
+              style: simple
+            Content-Type:
+              explode: false
+              schema:
+                type: string
+              style: simple
+            Last-Modified:
+              explode: false
+              schema:
+                type: string
+              style: simple
+      security:
+      - bearerAuth: []
+      summary: Get LiDAR file metadata
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+    post:
+      operationId: trees_tree_id_lidar_post
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/_trees__tree_id__lidar_post_request"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/_trees__tree_id__lidar_post_201_response"
+          description: LiDAR file uploaded
+      security:
+      - bearerAuth: []
+      summary: Upload LiDAR file for a tree
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /trees/{tree_id}/worklogs:
+    get:
+      operationId: trees_tree_id_worklogs_get
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/WorkLog"
+                type: array
+          description: Work logs
+      security:
+      - bearerAuth: []
+      summary: List work logs for a tree
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+    post:
+      operationId: trees_tree_id_worklogs_post
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/_trees__tree_id__worklogs_post_request"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkLog"
+          description: Work log created
+      security:
+      - bearerAuth: []
+      summary: Add a new work log
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /trees/{tree_id}/worklogs/{worklog_id}:
+    get:
+      operationId: trees_tree_id_worklogs_worklog_id_get
+      parameters:
+      - explode: false
+        in: path
+        name: tree_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: false
+        in: path
+        name: worklog_id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkLog"
+          description: Work log detail
+      security:
+      - bearerAuth: []
+      summary: Get work log details
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+components:
+  schemas:
+    UserRegister:
+      example:
+        password: password
+        username: username
+      properties:
+        username:
+          title: username
+          type: string
+        password:
+          title: password
+          type: string
+      required:
+      - password
+      - username
+      title: UserRegister
+      type: object
+    UserLogin:
+      example:
+        password: password
+        username: username
+      properties:
+        username:
+          title: username
+          type: string
+        password:
+          title: password
+          type: string
+      required:
+      - password
+      - username
+      title: UserLogin
+      type: object
+    TokenResponse:
+      example:
+        access_token: access_token
+      properties:
+        access_token:
+          title: access_token
+          type: string
+      title: TokenResponse
+      type: object
+    Tree:
+      example:
+        lng: 1.4658129
+        lidar_url: lidar_url
+        id: 0
+        type: type
+        lat: 6.0274563
+      properties:
+        id:
+          title: id
+          type: integer
+        lat:
+          format: float
+          title: lat
+          type: number
+        lng:
+          format: float
+          title: lng
+          type: number
+        type:
+          title: type
+          type: string
+        lidar_url:
+          nullable: true
+          title: lidar_url
+          type: string
+      title: Tree
+      type: object
+    WorkLog:
+      example:
+        date: 2000-01-23
+        description: description
+        id: 0
+      properties:
+        id:
+          title: id
+          type: integer
+        date:
+          format: date
+          title: date
+          type: string
+        description:
+          title: description
+          type: string
+      title: WorkLog
+      type: object
+    _auth_register_post_200_response:
+      example:
+        user_id: 0
+        message: message
+      properties:
+        message:
+          title: message
+          type: string
+        user_id:
+          title: user_id
+          type: integer
+      title: _auth_register_post_200_response
+      type: object
+    _trees_post_request:
+      properties:
+        lat:
+          title: lat
+          type: number
+        lng:
+          title: lng
+          type: number
+        type:
+          title: type
+          type: string
+      title: _trees_post_request
+      type: object
+    _trees__tree_id__lidar_post_request:
+      properties:
+        file:
+          format: binary
+          type: string
+      type: object
+    _trees__tree_id__lidar_post_201_response:
+      example:
+        size_bytes: 0
+        content_type: content_type
+        uploaded_at: 2000-01-23T04:56:07.000+00:00
+        lidar_url: lidar_url
+        message: message
+      properties:
+        message:
+          title: message
+          type: string
+        lidar_url:
+          title: lidar_url
+          type: string
+        size_bytes:
+          title: size_bytes
+          type: integer
+        content_type:
+          title: content_type
+          type: string
+        uploaded_at:
+          format: date-time
+          title: uploaded_at
+          type: string
+      title: _trees__tree_id__lidar_post_201_response
+      type: object
+    _trees__tree_id__lidar_delete_200_response:
+      example:
+        message: message
+      properties:
+        message:
+          title: message
+          type: string
+      title: _trees__tree_id__lidar_delete_200_response
+      type: object
+    _trees__tree_id__worklogs_post_request:
+      properties:
+        date:
+          format: date
+          title: date
+          type: string
+        description:
+          title: description
+          type: string
+      title: _trees__tree_id__worklogs_post_request
+      type: object
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+      x-bearerInfoFunc: openapi_server.controllers.security_controller.info_from_bearerAuth
