@@ -117,8 +117,6 @@ paths:
     get:
       summary: Get tree details
       operationId: openapi_server.controllers.default_controller.trees_tree_id_get
-      security:
-        - bearerAuth: []
       parameters:
         - { in: path, name: tree_id, required: true, schema: { type: integer } }
       responses:

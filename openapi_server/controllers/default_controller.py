@@ -97,21 +97,16 @@ def auth_login_post(body): # noqa: E501
     
     return {'access_token': token}
 
-def trees_tree_id_get(tree_id): # noqa: E501
+def trees_tree_id_get(tree_id):  # noqa: E501
     """Get tree details"""
-    # 1. JWTからユーザーを特定
-    current_user_id, error_response, status_code = get_current_user_from_token()
-    if error_response:
-        return error_response, status_code
-    
-    # 2. 指定されたIDを持ち、かつログイン中のユーザーが所有する木を検索
-    tree = Tree.query.filter_by(id=tree_id, owner_user_id=current_user_id).first()
-    
-    # 3. もし木が見つからなければ、404エラーを返す
+    # 指定されたIDの木を検索（認証不要）
+    tree = Tree.query.filter_by(id=tree_id).first()
+
+    # もし木が見つからなければ、404エラーを返す
     if not tree:
-        return {"message": "指定された木が見つからないか、アクセス権がありません"}, 404
-    
-    # 4. 見つかった木を辞書に変換して返す
+        return {"message": "指定された木が見つかりません"}, 404
+
+    # 見つかった木を辞書に変換して返す
     result = {
         "id": tree.id,
         "lat": tree.lat,
